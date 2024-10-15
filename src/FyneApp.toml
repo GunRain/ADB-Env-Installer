@@ -1,0 +1,6 @@
+[Details]
+  Icon = "icon.png"
+  Name = "ADB与Fastboot环境安装器"
+  ID = "zip.latestfile.adb_env"
+  Version = "1.0.0"
+  Build = 1
