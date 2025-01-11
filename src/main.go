@@ -89,7 +89,7 @@ func main() {
 	txt2 := canvas.NewText("将会通过网络下载最新版平台工具", theme.ForegroundColor())
 	txt2.Alignment = fyne.TextAlignCenter
 	txt2.TextSize = targetTextSize
-	txt3 := canvas.NewText("由哔哩哔哩@泠熙子殿下制作，感谢您的使用", theme.ForegroundColor())
+	txt3 := canvas.NewText("由 哔哩哔哩@安音咲汀 制作，感谢您的使用", theme.ForegroundColor())
 	txt3.Alignment = fyne.TextAlignCenter
 	txt3.TextSize = targetTextSize / 3 * 2
 	button := widget.NewButton("进行安装", func() {
