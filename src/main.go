@@ -24,6 +24,7 @@ import (
 )
 
 const (
+	ver            = "CNRel1.1 (2025新年特供)"
 	targetWidth    = 500
 	targetHeight   = 300
 	targetTextSize = 21
@@ -37,118 +38,113 @@ var fontData []byte
 //go:embed icon.png
 var iconData []byte
 
-type App_Theme struct{}
+type AppTheme struct{}
 
-var _ fyne.Theme = (*App_Theme)(nil)
+var _ fyne.Theme = (*AppTheme)(nil)
 
-func (m *App_Theme) Font(style fyne.TextStyle) fyne.Resource {
-	return &fyne.StaticResource{
-		StaticName:    "font.ttf",
-		StaticContent: fontData,
-	}
+func (m *AppTheme) Font(style fyne.TextStyle) fyne.Resource {
+	return &fyne.StaticResource{StaticName: "font.ttf", StaticContent: fontData}
 }
 
-func (m *App_Theme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+func (m *AppTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	return theme.DefaultTheme().Color(name, variant)
 }
 
-func (m *App_Theme) Icon(name fyne.ThemeIconName) fyne.Resource {
+func (m *AppTheme) Icon(name fyne.ThemeIconName) fyne.Resource {
 	return theme.DefaultTheme().Icon(name)
 }
 
-func (m *App_Theme) Size(name fyne.ThemeSizeName) float32 {
+func (m *AppTheme) Size(name fyne.ThemeSizeName) float32 {
 	return theme.DefaultTheme().Size(name)
 }
 
-func cannot(reson string) *fyne.Container {
-	txt := canvas.NewText("安装失败", theme.ForegroundColor())
-	txt.Alignment = fyne.TextAlignCenter
-	txt.TextSize = targetTextSize / 3 * 4
-	button := widget.NewButton("退出", func() { os.Exit(-1) })
+func Abort(reson string) *fyne.Container {
+	txt := canvas.NewText("安装失败("+reson+")", theme.Color(theme.ColorNameForeground))
+	txt.Alignment, txt.TextSize = fyne.TextAlignCenter, targetTextSize/3*4
 
-	content := container.NewCenter(
-		container.NewVBox(
-			txt,
-			widget.NewLabel(""),
-			button,
-		),
-	)
-	return content
+	return container.NewCenter(container.NewVBox(
+		txt,
+		widget.NewLabel(""),
+		widget.NewButton("退出", func() { os.Exit(-1) }),
+	))
 }
 
 func main() {
-	Env_Installer := app.New()
-	Env_Installer.SetIcon(fyne.NewStaticResource("icon.png", iconData))
-	window := Env_Installer.NewWindow("ADB与Fastboot环境安装器")
-	Theme := &App_Theme{}
-	Env_Installer.Settings().SetTheme(Theme)
+	var err error
 
-	txt := canvas.NewText("为当前用户安装ADB与Fastboot环境", theme.ForegroundColor())
-	txt.Alignment = fyne.TextAlignCenter
-	txt.TextSize = targetTextSize
-	txt2 := canvas.NewText("将会通过网络下载最新版平台工具", theme.ForegroundColor())
-	txt2.Alignment = fyne.TextAlignCenter
-	txt2.TextSize = targetTextSize
-	txt3 := canvas.NewText("由 哔哩哔哩@安音咲汀 制作，感谢您的使用", theme.ForegroundColor())
-	txt3.Alignment = fyne.TextAlignCenter
-	txt3.TextSize = targetTextSize / 3 * 2
-	button := widget.NewButton("进行安装", func() {
-		txt0 := canvas.NewText("正在安装中，请耐心等待", theme.ForegroundColor())
-		txt0.Alignment = fyne.TextAlignCenter
-		txt0.TextSize = targetTextSize / 3 * 4
-		content0 := container.NewCenter(
-			container.NewVBox(
-				txt0,
-			),
-		)
-		window.SetContent(content0)
+	AppBase := app.New()
+	AppBase.SetIcon(fyne.NewStaticResource("icon.png", iconData))
+	AppBase.Settings().SetTheme(&AppTheme{})
+	AppWindow := AppBase.NewWindow("ADB环境安装器  " + ver)
+
+	HomeTxt1 := canvas.NewText("为当前用户安装ADB与Fastboot环境", theme.Color(theme.ColorNameForeground))
+	HomeTxt1.Alignment, HomeTxt1.TextSize = fyne.TextAlignCenter, targetTextSize
+	HomeTxt2 := canvas.NewText("将会通过网络下载最新版平台工具", theme.Color(theme.ColorNameForeground))
+	HomeTxt2.Alignment, HomeTxt2.TextSize = fyne.TextAlignCenter, targetTextSize
+	HomeTxt3 := canvas.NewText("官网: www.mod.latestfile.zip   作者: 安音咲汀", theme.Color(theme.ColorNameForeground))
+	HomeTxt3.Alignment, HomeTxt3.TextSize = fyne.TextAlignCenter, targetTextSize/3*2
+	HomeTxt4 := canvas.NewText("感谢您的使用", theme.Color(theme.ColorNameForeground))
+	HomeTxt4.Alignment, HomeTxt4.TextSize = fyne.TextAlignCenter, targetTextSize/3*2
+
+	HomeButton1 := widget.NewButton("进行安装", func() {
+		InstTxt := canvas.NewText("正在安装中，请耐心等待", theme.Color(theme.ColorNameForeground))
+		InstTxt.Alignment, InstTxt.TextSize = fyne.TextAlignCenter, targetTextSize/3*4
+		AppWindow.SetContent(container.NewCenter(container.NewVBox(InstTxt)))
 
 		userProfile := os.Getenv("USERPROFILE")
 		if userProfile == "" {
-			window.SetContent(cannot("无法获取变量 USERPROFILE 值"))
+			AppWindow.SetContent(Abort("获取变量 USERPROFILE 值失败(值为空)"))
 			return
 		}
 		targetDir := filepath.Join(userProfile, targetEnvDir)
-		_, err := os.Stat(targetDir)
+
+		_, err = os.Stat(targetDir)
 		if err == nil {
+			exec.Command("adb.exe", "kill-server").Run()
 			err = os.RemoveAll(targetDir)
 			if err != nil {
-				window.SetContent(cannot("无法删除文件夹 " + targetDir + " : " + err.Error()))
+				AppWindow.SetContent(Abort("删除文件夹失败 " + targetDir + " : " + err.Error()))
 				return
 			}
 		}
-		err = os.Mkdir(targetDir, os.FileMode(0777))
+		err = os.MkdirAll(targetDir, os.FileMode(0755))
 		if err != nil {
-			window.SetContent(cannot("无法创建文件夹 " + targetDir + " : " + err.Error()))
-			return
-		}
-		zipFile := filepath.Join(targetDir, "platform-tools.zip")
-		out, err := os.Create(zipFile)
-		if err != nil {
-			window.SetContent(cannot("无法创建文件 " + zipFile + " : " + err.Error()))
+			AppWindow.SetContent(Abort("创建文件夹失败 " + targetDir + " : " + err.Error()))
 			return
 		}
 
-		resp, err := http.Get("https://googledownloads.cn/android/repository/platform-tools-latest-windows.zip")
+		zipFile := filepath.Join(targetDir, "platform-tools.zip")
+		out, err := os.Create(zipFile)
 		if err != nil {
-			window.SetContent(cannot("无法下载文件: " + err.Error()))
+			AppWindow.SetContent(Abort("创建文件失败 " + zipFile + " : " + err.Error()))
 			return
 		}
-		defer resp.Body.Close()
+		resp, err := http.Get("https://googledownloads.cn/android/repository/platform-tools-latest-windows.zip")
+		if err != nil {
+			AppWindow.SetContent(Abort("下载文件失败: " + err.Error()))
+			return
+		}
 		if resp.StatusCode != http.StatusOK {
-			window.SetContent(cannot("服务器返回非 200 状态码: " + strconv.Itoa(resp.StatusCode)))
+			AppWindow.SetContent(Abort("下载文件失败(" + strconv.Itoa(resp.StatusCode) + ")"))
 			return
 		}
 		_, err = io.Copy(out, resp.Body)
 		if err != nil {
-			window.SetContent(cannot("无法储存文件: " + err.Error()))
+			AppWindow.SetContent(Abort("储存文件失败: " + err.Error()))
 			return
 		}
-		out.Close()
+		if out.Close() != nil {
+			AppWindow.SetContent(Abort("关闭文件失败: " + err.Error()))
+			return
+		}
+		if resp.Body.Close() != nil {
+			AppWindow.SetContent(Abort("关闭请求失败: " + err.Error()))
+			return
+		}
 
 		r, err := zip.OpenReader(zipFile)
 		if err != nil {
-			window.SetContent(cannot("无法打开文件: " + err.Error()))
+			AppWindow.SetContent(Abort("打开文件失败: " + err.Error()))
 			return
 		}
 		var rootPrefix string
@@ -161,93 +157,107 @@ func main() {
 				os.MkdirAll(fpath, os.ModePerm)
 				continue
 			}
-			if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-				window.SetContent(cannot("无法创建文件夹 " + filepath.Dir(fpath) + " : " + err.Error()))
+			if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+				AppWindow.SetContent(Abort("创建文件夹失败 " + filepath.Dir(fpath) + " : " + err.Error()))
 				return
 			}
 			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
-				window.SetContent(cannot("无法创建文件 " + fpath + " : " + err.Error()))
+				AppWindow.SetContent(Abort("创建文件失败 " + fpath + " : " + err.Error()))
 				return
 			}
 			rc, err := f.Open()
 			if err != nil {
-				window.SetContent(cannot("无法打开文件: " + err.Error()))
+				AppWindow.SetContent(Abort("打开文件失败: " + err.Error()))
 				return
 			}
 			_, err = io.Copy(outFile, rc)
-			outFile.Close()
-			rc.Close()
 			if err != nil {
-				window.SetContent(cannot("无法解压文件: " + err.Error()))
+				AppWindow.SetContent(Abort("解压文件失败: " + err.Error()))
+				return
+			}
+			err = outFile.Close()
+			if err != nil {
+				AppWindow.SetContent(Abort("关闭文件失败: " + err.Error()))
+				return
+			}
+			err = rc.Close()
+			if err != nil {
+				AppWindow.SetContent(Abort("关闭文件失败: " + err.Error()))
 				return
 			}
 		}
-		r.Close()
-		if err := os.Remove(zipFile); err != nil {
-			window.SetContent(cannot("无法删除文件 " + zipFile + " : " + err.Error()))
+		err = r.Close()
+		if err != nil {
+			AppWindow.SetContent(Abort("关闭文件失败: " + err.Error()))
+			return
+		}
+		if err = os.Remove(zipFile); err != nil {
+			AppWindow.SetContent(Abort("删除文件失败 " + zipFile + " : " + err.Error()))
 			return
 		}
 
 		key, err := registry.OpenKey(registry.CURRENT_USER, "Environment", registry.QUERY_VALUE|registry.SET_VALUE)
 		if err != nil {
-			window.SetContent(cannot("无法打开注册表键: " + err.Error()))
+			AppWindow.SetContent(Abort("打开注册表键失败: " + err.Error()))
 			return
 		}
-		defer key.Close()
 		pathValue, _, err := key.GetStringValue("Path")
 		if err != nil && err != registry.ErrNotExist {
-			window.SetContent(cannot("无法获取 Path 值: " + err.Error()))
+			AppWindow.SetContent(Abort("获取注册表值 Path 失败: " + err.Error()))
 			return
 		}
-		if !strings.Contains(pathValue, `%USERPROFILE%\`+targetEnvDir) {
-			pathValue += `;%USERPROFILE%\` + targetEnvDir
+		targetPathValue := `%USERPROFILE%\` + targetEnvDir
+		if !strings.Contains(pathValue, targetPathValue) {
+			if err == registry.ErrNotExist || pathValue == "" {
+				pathValue = targetPathValue
+			} else {
+				pathValue = targetPathValue + ";" + pathValue
+			}
 			err = key.SetStringValue("Path", pathValue)
 			if err != nil {
-				window.SetContent(cannot("无法设置新的 Path 值: " + err.Error()))
+				AppWindow.SetContent(Abort("设置注册表值 Path 失败: " + err.Error()))
 				return
 			}
 		}
-		txt := canvas.NewText("安装成功", theme.ForegroundColor())
-		txt.Alignment = fyne.TextAlignCenter
-		txt.TextSize = targetTextSize / 3 * 4
-		button := widget.NewButton("退出", func() { os.Exit(-1) })
-		button2 := widget.NewButton("启动CMD", func() {
-			cmd := exec.Command("cmd", "/C", "start", "cmd.exe")
-			cmd.SysProcAttr = &syscall.SysProcAttr{
-				HideWindow: false,
-			}
-			cmd.Start()
-		})
-		content := container.NewCenter(
-			container.NewVBox(
-				txt,
-				widget.NewLabel(""),
-				button,
-				button2,
-			),
-		)
-		window.SetContent(content)
+		err = key.Close()
+		if err != nil {
+			AppWindow.SetContent(Abort("关闭注册表键失败: " + err.Error()))
+			return
+		}
+
+		OkTxt := canvas.NewText("安装成功", theme.Color(theme.ColorNameForeground))
+		OkTxt.Alignment, OkTxt.TextSize = fyne.TextAlignCenter, targetTextSize/3*4
+		AppWindow.SetContent(container.NewCenter(container.NewVBox(
+			OkTxt,
+			widget.NewLabel(""),
+			widget.NewButton("退出", func() { os.Exit(0) }),
+			widget.NewButton("启动CMD", func() {
+				cmd := exec.Command("cmd", "/C", "start", "cmd.exe")
+				cmd.SysProcAttr = &syscall.SysProcAttr{
+					HideWindow: false,
+				}
+				cmd.Start()
+			}),
+		)))
 	})
-	button2 := widget.NewButton("退出", func() { os.Exit(-1) })
-	content := container.NewCenter(
-		container.NewVBox(
-			txt,
-			txt2,
-			widget.NewLabel(""),
-			txt3,
-			widget.NewLabel(""),
-			button,
-			button2,
-		),
-	)
-	window.SetContent(content)
-	window.Resize(fyne.NewSize(targetWidth, targetHeight))
-	window.SetFixedSize(true)
-	if desk, ok := Env_Installer.(desktop.App); ok {
-		m := fyne.NewMenu("ADB与Fastboot环境安装器", fyne.NewMenuItem("显示界面", func() { window.Show() }), fyne.NewMenuItem("隐藏界面", func() { window.Hide() }))
-		desk.SetSystemTrayMenu(m)
+
+	AppWindow.SetContent(container.NewCenter(container.NewVBox(
+		HomeTxt1,
+		HomeTxt2,
+		widget.NewLabel(""),
+		HomeTxt3,
+		HomeTxt4,
+		widget.NewLabel(""),
+		HomeButton1,
+		widget.NewButton("退出", func() { os.Exit(0) }),
+	)))
+
+	AppWindow.Resize(fyne.NewSize(targetWidth, targetHeight))
+	AppWindow.SetFixedSize(true)
+	if Desk, ok := AppBase.(desktop.App); ok {
+		Desk.SetSystemTrayMenu(fyne.NewMenu("ADB环境安装器", fyne.NewMenuItem("显示界面", func() { AppWindow.Show() }), fyne.NewMenuItem("隐藏界面", func() { AppWindow.Hide() })))
 	}
-	window.CenterOnScreen()
-	window.ShowAndRun()
+	AppWindow.CenterOnScreen()
+	AppWindow.ShowAndRun()
 }
