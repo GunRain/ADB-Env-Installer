@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	ver            = "CNRel1.1 (2025新年特供)"
+	ver            = "CNRC1.1 (2025新年特供)"
 	targetWidth    = 500
 	targetHeight   = 300
 	targetTextSize = 21
