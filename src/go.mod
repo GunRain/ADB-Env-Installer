@@ -1,6 +1,6 @@
 module latestfile.zip/adb_env
 
-go 1.23.5
+go 1.18
 
 require (
 	fyne.io/fyne/v2 v2.5.3
