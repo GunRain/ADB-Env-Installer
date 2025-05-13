@@ -59,7 +59,7 @@ func (m *AppTheme) Size(name fyne.ThemeSizeName) float32 {
 }
 
 func Abort(reson string) *fyne.Container {
-	txt := canvas.NewText("安装失败("+reson+")", theme.Color(theme.ColorNameForeground))
+	txt := canvas.NewText("安装失败", theme.Color(theme.ColorNameForeground))
 	txt.Alignment, txt.TextSize = fyne.TextAlignCenter, targetTextSize/3*4
 
 	return container.NewCenter(container.NewVBox(
@@ -233,7 +233,7 @@ func main() {
 			widget.NewLabel(""),
 			widget.NewButton("退出", func() { os.Exit(0) }),
 			widget.NewButton("启动CMD", func() {
-				cmd := exec.Command("cmd", "/C", "start", "cmd.exe")
+				cmd := exec.Command("cmd.exe", "/C", "start", "cmd.exe")
 				cmd.SysProcAttr = &syscall.SysProcAttr{
 					HideWindow: false,
 				}
