@@ -137,7 +137,7 @@ func main() {
 
 	HomeTxt3 := canvas.NewText("当前: "+local+"   最新: "+latest, theme.Color(theme.ColorNameForeground))
 	HomeTxt3.Alignment, HomeTxt3.TextSize = fyne.TextAlignCenter, WindowTextSize/3*2
-	HomeTxt4 := canvas.NewText("项目: github.com/OOM-WG   作者: 安音咲汀", theme.Color(theme.ColorNameForeground))
+	HomeTxt4 := canvas.NewText("下载: https://latestfile.zip   作者: 白彩恋", theme.Color(theme.ColorNameForeground))
 	HomeTxt4.Alignment, HomeTxt4.TextSize = fyne.TextAlignCenter, WindowTextSize/3*2
 
 	HomeButton1 := widget.NewButton("进行安装", func() {
